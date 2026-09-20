@@ -45,7 +45,11 @@ async def _cohort(result: ScenarioResult, server: CurlFaultServer) -> AsyncItera
     cleanup_errors: dict[str, BaseException] = {}
     try:
         await server.__aenter__()
-        routing = CurlRouting(server)
+        routing = (
+            CurlRouting(server, download_faults=True)
+            if result.scenario.startswith("curl_download_")
+            else CurlRouting(server)
+        )
         client = build_curl_client(routing)
         await client.__aenter__()
         yield client
@@ -230,11 +234,12 @@ async def download_case(result: ScenarioResult, variant: str) -> None:
             result.require("successful_download_baseline", destination.read_bytes() == MEDIA)
             destination.write_bytes(b"existing")
             task = asyncio.create_task(download())
-            if variant in {"cancel", "close_reopen"}:
-                await server.wait_for_gate("curl-download-body")
+            if variant in {"body_stall", "cancel", "close_reopen"}:
+                await server.wait_for_gate("curl-download-body", timeout=20)
+                result.require("curl_fault_body_observed", True)
                 if variant == "cancel":
                     task.cancel()
-                else:
+                elif variant == "close_reopen":
                     await client.close(drain=False)
             error = None
             try:
@@ -315,8 +320,9 @@ async def run_scenario(
         faults=["curl:valid-baseline", name, "same-client:recovery"],
         cohort_ids=[f"{operation_id}:0"],
         transport="curl_cffi",
-        rpc_timeout=0.5,
-        transfer_timeout=0.5,
+        rpc_timeout=None if name.startswith("curl_download_") else 0.5,
+        transfer_timeout=None if name.startswith("curl_download_") else 0.5,
+        download_fault_low_speed_seconds=1 if name.startswith("curl_download_") else None,
         rate_limit_max_retries=0,
         server_error_max_retries=0,
         cleanup_timeout=4,

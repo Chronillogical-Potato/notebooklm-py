@@ -195,6 +195,8 @@ tests/integration/faults/test_consistency_faults.py::test_web_consistency[consis
 tests/integration/faults/test_consistency_faults.py::test_web_consistency[consistency_missing_generation_id] # real loopback fault service; socket failures cannot be reproduced by VCR
 tests/integration/faults/test_curl_faults.py::test_curl_fault_scenario[curl_download_body_stall] # real loopback fault service; socket failures cannot be reproduced by VCR
 tests/integration/faults/test_curl_faults.py::test_curl_fault_scenario[curl_download_cancel] # real loopback fault service; socket failures cannot be reproduced by VCR
+tests/integration/faults/test_curl_faults.py::test_download_fault_survives_slow_tls_setup[curl_download_body_stall] # real loopback TLS handshake delay must precede the body fault
+tests/integration/faults/test_curl_faults.py::test_download_fault_survives_slow_tls_setup[curl_download_cancel] # real loopback TLS handshake delay must precede cancellation
 tests/integration/faults/test_curl_faults.py::test_curl_fault_scenario[curl_download_close_reopen] # real loopback fault service; socket failures cannot be reproduced by VCR
 tests/integration/faults/test_curl_faults.py::test_curl_fault_scenario[curl_download_prefix_failure] # real loopback fault service; socket failures cannot be reproduced by VCR
 tests/integration/faults/test_curl_faults.py::test_curl_fault_scenario[curl_download_success] # real loopback fault service; socket failures cannot be reproduced by VCR
