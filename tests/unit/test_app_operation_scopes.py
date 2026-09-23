@@ -202,15 +202,23 @@ async def test_saved_note_failure_retains_commit_evidence():
     await supervisor.wait_for_idle(1, 0)
 
 
-async def test_saved_note_owned_timeout_returns_settled_commit_evidence():
+async def test_saved_note_owned_timeout_returns_settled_commit_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+):
     from notebooklm._app.chat import save_answer_as_note
     from notebooklm._runtime.operation_context import adopt_operation_journal_entry
     from notebooklm.outcomes import CommitState
     from notebooklm.types import AskResult
 
+    # Admission must finish before this scenario's deadline: the behavior under
+    # test is settlement after a confirmed write, not scheduler speed on CI.
+    loop = asyncio.get_running_loop()
+    now = loop.time()
+    monkeypatch.setattr(loop, "time", lambda: now)
     client, supervisor = _client(0.01)
 
     async def create(*args):
+        nonlocal now
         entry = adopt_operation_journal_entry(
             supervisor, method="CREATE_NOTE", operation="notes.create"
         )
@@ -221,8 +229,9 @@ async def test_saved_note_owned_timeout_returns_settled_commit_evidence():
             "decoded creation response",
             known_resource_ids=("note-created",),
         )
-        # The note exists, but required readback has not completed when the
-        # real operation timer expires. Saving remains an optional action.
+        # Advance only after the write is confirmed, then yield so the actual
+        # operation timer cancels the pending readback and settles its journal.
+        now += 0.02
         await asyncio.Event().wait()
 
     client.notes = SimpleNamespace(create=create)

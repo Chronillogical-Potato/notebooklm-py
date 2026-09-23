@@ -308,6 +308,13 @@ python scripts/mcp_live_smoke.py \
     --notebook <notebook-id>
 ```
 
+The smoke follows source pagination until the uploaded source is found and Studio
+pagination until a downloadable artifact is found. For
+an Android-backed deployment pass `--backend android` so URL-less slide decks
+can use the backend's exact-download fallback. HTTP failure diagnostics omit raw
+response bodies and exception messages because they can contain signed capability
+URLs; they report HTTP status/byte counts or the exception class instead.
+
 ---
 
 ## Package Verification
